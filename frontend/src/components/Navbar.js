@@ -1,15 +1,25 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../context/AuthContext';
 import './Navbar.css';
 
 const Navbar = () => {
   const { isAuthenticated, user, logout } = useAuth();
   const navigate = useNavigate();
+  const [searchTerm, setSearchTerm] = useState('');
 
   const handleLogout = () => {
     logout();
     navigate('/');
+  };
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+    if (searchTerm.trim()) {
+      navigate(`/products?search=${encodeURIComponent(searchTerm.trim())}`);
+    } else {
+      navigate('/products');
+    }
   };
 
   return (
@@ -21,22 +31,24 @@ const Navbar = () => {
         </Link>
 
         {/* Search Bar */}
-        <div className="nav-search">
+        <form onSubmit={handleSearch} className="nav-search">
           <input 
             type="text" 
             placeholder="Ders kitabı, not, kırtasiye ara..."
             className="search-input"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
           />
-          <button className="search-btn">🔍</button>
-        </div>
+          <button type="submit" className="search-btn">🔍</button>
+        </form>
 
         {/* User Menu */}
         <div className="nav-menu">
           {isAuthenticated ? (
             <div className="user-menu">
               <span className="user-name">Merhaba, {user?.name}</span>
-              <button className="nav-btn">İlan Ver</button>
-              <button className="nav-btn">Profilim</button>
+              <Link to="/add-product" className="nav-btn">İlan Ver</Link>
+              <Link to="/my-products" className="nav-btn">İlanlarım</Link>
               <button className="nav-btn logout-btn" onClick={handleLogout}>
                 Çıkış
               </button>
