@@ -1,20 +1,66 @@
 // frontend/src/pages/Messages.js
-import React from 'react';
+import React, { useState } from 'react';
+import { useAuth } from '../context/AuthContext';
+import MessageList from '../components/messages/MessageList';
+import ChatWindow from '../components/messages/ChatWindow';
+import './Messages.css';
 
 const Messages = () => {
+  const [selectedUserId, setSelectedUserId] = useState(null);
+  const [selectedUserName, setSelectedUserName] = useState('');
+  const { user, isAuthenticated, loading, initialized } = useAuth();
+
+  // Auth henüz initialize olmadıysa loading göster
+  if (!initialized || loading) {
+    return (
+      <div className="messages-page">
+        <div className="auth-loading">
+          <h2>⏳ Yükleniyor...</h2>
+          <p>Kullanıcı durumu kontrol ediliyor...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Kullanıcı giriş yapmamışsa yönlendir
+  if (!isAuthenticated || !user) {
+    return (
+      <div className="messages-page">
+        <div className="auth-required">
+          <h2>🔒 Giriş Gerekli</h2>
+          <p>Mesajlarınızı görmek için giriş yapmanız gerekiyor.</p>
+          <button 
+            onClick={() => window.location.href = '/login'}
+            className="login-btn"
+          >
+            Giriş Yap
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const handleSelectConversation = (userId, userName) => {
+    setSelectedUserId(userId);
+    setSelectedUserName(userName);
+  };
+
   return (
-    <div style={{ padding: '2rem', textAlign: 'center' }}>
-      <h1>Mesajlar</h1>
-      <p>Mesajlaşma özelliği yakında eklenecek...</p>
-      <div style={{ 
-        background: '#f0f0f0', 
-        padding: '2rem', 
-        borderRadius: '8px',
-        margin: '2rem auto',
-        maxWidth: '600px'
-      }}>
-        <h3>🚧 Geliştirme Aşamasında</h3>
-        <p>Bu özellik Adım 7'de tamamlanacak</p>
+    <div className="messages-page">
+      <div className="messages-container">
+        <div className="messages-sidebar">
+          <MessageList 
+            onSelectConversation={handleSelectConversation}
+            selectedUserId={selectedUserId}
+          />
+        </div>
+        
+        <div className="messages-main">
+          <ChatWindow 
+            selectedUserId={selectedUserId}
+            selectedUserName={selectedUserName}
+          />
+        </div>
       </div>
     </div>
   );

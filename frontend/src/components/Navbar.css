@@ -1,3 +1,4 @@
+/* frontend/src/components/Navbar.css */
 .navbar {
   background-color: #fff;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
@@ -101,6 +102,59 @@
   transform: translateY(-1px);
 }
 
+/* Mesajlar butonu - YENİ */
+.messages-btn {
+  position: relative;
+  display: flex !important;
+  align-items: center;
+  gap: 0.5rem;
+  background-color: #f3f4f6;
+  color: #374151;
+  border: 1px solid #d1d5db;
+}
+
+.messages-btn:hover {
+  background-color: #e5e7eb;
+  color: #111827;
+}
+
+.messages-icon {
+  font-size: 1.1rem;
+}
+
+.messages-text {
+  font-size: 0.9rem;
+}
+
+.message-badge {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background-color: #dc2626;
+  color: white;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: bold;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
 @media (max-width: 768px) {
   .nav-container {
     flex-direction: column;
@@ -115,5 +169,74 @@
   .user-menu, .auth-menu {
     flex-wrap: wrap;
     justify-content: center;
+  }
+
+  /* Mobile'da mesaj butonunu sadeleştir */
+  .messages-text {
+    display: none;
+  }
+  
+  .messages-btn {
+    padding: 0.5rem;
+    min-width: auto;
+  }
+  
+  .message-badge {
+    top: -5px;
+    right: -5px;
+    width: 16px;
+    height: 16px;
+    font-size: 0.7rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .user-menu {
+    gap: 0.5rem;
+  }
+  
+  .nav-btn {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.9rem;
+  }
+  
+  .user-name {
+    display: none; /* Çok küçük ekranlarda gizle */
+  }
+}
+
+/* Logo stilleri */
+.nav-logo {
+  display: flex;
+  align-items: center;
+  text-decoration: none !important;
+}
+
+.logo-image {
+  height: 45px;
+  width: auto;
+  transition: transform 0.2s ease;
+}
+
+.logo-image:hover {
+  transform: scale(1.05);
+}
+
+.logo-fallback {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #2563eb;
+}
+
+/* Responsive logo */
+@media (max-width: 768px) {
+  .logo-image {
+    height: 35px;
+  }
+}
+
+@media (max-width: 480px) {
+  .logo-image {
+    height: 30px;
   }
 }

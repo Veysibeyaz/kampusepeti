@@ -35,12 +35,18 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 // Routes
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/products', require('./routes/products'));
+app.use('/api/messages', require('./routes/messages')); // Yeni eklendi
 
 // Ana route
 app.get('/', (req, res) => {
   res.json({ 
     message: 'KampüSepeti API çalışıyor!',
-    version: '1.0.0'
+    version: '1.0.0',
+    endpoints: {
+      auth: '/api/auth',
+      products: '/api/products',
+      messages: '/api/messages'
+    }
   });
 });
 
@@ -68,4 +74,5 @@ app.listen(PORT, () => {
   console.log(`🚀 Server ${PORT} portunda çalışıyor`);
   console.log(`📱 API: http://localhost:${PORT}`);
   console.log(`📁 Uploads: http://localhost:${PORT}/uploads`);
+  console.log(`💬 Messages API: http://localhost:${PORT}/api/messages`);
 });

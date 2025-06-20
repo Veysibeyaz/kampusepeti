@@ -1,7 +1,8 @@
 // frontend/src/pages/ProductDetail.js
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext'; // Düzeltildi
+import { useAuth } from '../context/AuthContext';
+import ContactSeller from '../components/ContactSeller';
 import './ProductDetail.css';
 
 const ProductDetail = () => {
@@ -67,45 +68,39 @@ const ProductDetail = () => {
     }
   };
 
-  const handleMessageSeller = () => {
-    if (!isAuthenticated) {
-      navigate('/login');
-      return;
-    }
-    
-    if (user._id === product.seller._id) {
-      alert('Kendi ürününüze mesaj gönderemezsiniz');
-      return;
-    }
-
-    // Mesajlaşma sayfasına yönlendir
-    navigate(`/messages?user=${product.seller._id}&product=${product._id}`);
-  };
-
   const isOwner = isAuthenticated && user && product && user._id === product.seller._id;
 
   if (loading) {
     return (
       <div className="product-detail-page">
         <div className="container">
-          <div className="loading-state">
-            <div className="loading-spinner"></div>
-            <p>Ürün detayları yükleniyor...</p>
+          <div className="loading-spinner">Yükleniyor...</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="product-detail-page">
+        <div className="container">
+          <div className="error-message">
+            <h2>Hata</h2>
+            <p>{error}</p>
+            <button onClick={() => navigate('/')}>Ana Sayfaya Dön</button>
           </div>
         </div>
       </div>
     );
   }
 
-  if (error || !product) {
+  if (!product) {
     return (
       <div className="product-detail-page">
         <div className="container">
-          <div className="error-state">
-            <p>❌ {error || 'Ürün bulunamadı'}</p>
-            <button onClick={() => navigate('/products')} className="back-btn">
-              Ürün Listesine Dön
-            </button>
+          <div className="error-message">
+            <h2>Ürün bulunamadı</h2>
+            <button onClick={() => navigate('/')}>Ana Sayfaya Dön</button>
           </div>
         </div>
       </div>
@@ -115,24 +110,18 @@ const ProductDetail = () => {
   return (
     <div className="product-detail-page">
       <div className="container">
-        {/* Breadcrumb */}
-        <div className="breadcrumb">
-          <Link to="/">Ana Sayfa</Link>
-          <span>/</span>
-          <Link to="/products">İlanlar</Link>
-          <span>/</span>
-          <span>{product.title}</span>
-        </div>
-
-        <div className="product-detail">
-          {/* Images Section */}
+        <div className="product-detail-container">
+          {/* Product Images */}
           <div className="product-images">
             <div className="main-image">
-              <img
-                src={product.images?.[selectedImage] || '/api/placeholder/600/400'}
+              <img 
+                src={product.images && product.images.length > 0 ? 
+                  `http://localhost:5000${product.images[selectedImage]}` : 
+                  '/api/placeholder/400/400'
+                }
                 alt={product.title}
                 onError={(e) => {
-                  e.target.src = '/api/placeholder/600/400';
+                  e.target.src = '/api/placeholder/400/400';
                 }}
               />
             </div>
@@ -140,9 +129,9 @@ const ProductDetail = () => {
             {product.images && product.images.length > 1 && (
               <div className="image-thumbnails">
                 {product.images.map((image, index) => (
-                  <img
+                  <img 
                     key={index}
-                    src={image}
+                    src={`http://localhost:5000${image}`}
                     alt={`${product.title} ${index + 1}`}
                     className={selectedImage === index ? 'active' : ''}
                     onClick={() => setSelectedImage(index)}
@@ -199,7 +188,7 @@ const ProductDetail = () => {
               
               <div className="detail-row">
                 <span className="detail-label">👁 Görüntülenme:</span>
-                <span>{product.viewCount} kez</span>
+                <span>{product.viewCount || 0} kez</span>
               </div>
               
               <div className="detail-row">
@@ -213,52 +202,47 @@ const ProductDetail = () => {
               <p>{product.description}</p>
             </div>
 
-            {/* Action Buttons */}
-            <div className="product-actions">
-              {isOwner ? (
-                <div className="owner-actions">
-                  <button 
-                    onClick={() => navigate(`/edit-product/${product._id}`)}
-                    className="btn-edit"
-                  >
-                    ✏️ Düzenle
-                  </button>
-                  <button 
-                    onClick={() => navigate('/my-products')}
-                    className="btn-manage"
-                  >
-                    📋 İlanlarım
-                  </button>
-                </div>
-              ) : (
+            {/* Action Buttons - Owner için */}
+            {isOwner && (
+              <div className="owner-actions">
                 <button 
-                  onClick={handleMessageSeller}
-                  className="btn-message"
+                  onClick={() => navigate(`/edit-product/${product._id}`)}
+                  className="btn-edit"
                 >
-                  💬 Satıcıya Mesaj Gönder
+                  ✏️ Düzenle
                 </button>
-              )}
-            </div>
+                <button 
+                  onClick={() => navigate('/my-products')}
+                  className="btn-manage"
+                >
+                  📋 İlanlarım
+                </button>
+              </div>
+            )}
           </div>
         </div>
+
+        {/* Contact Seller - Sadece owner değilse göster */}
+        {!isOwner && (
+          <ContactSeller 
+            product={product} 
+            seller={product.seller} 
+          />
+        )}
 
         {/* Seller Info */}
         <div className="seller-info">
           <h3>Satıcı Bilgileri</h3>
           <div className="seller-card">
             <div className="seller-avatar">
-              <img 
-                src={product.seller.avatar || '/api/placeholder/80/80'} 
-                alt={product.seller.name}
-                onError={(e) => {
-                  e.target.src = '/api/placeholder/80/80';
-                }}
-              />
+              <div className="avatar-circle">
+                {product.seller.name.charAt(0).toUpperCase()}
+              </div>
             </div>
             <div className="seller-details">
               <h4>{product.seller.name}</h4>
               <p>📧 {product.seller.email}</p>
-              <p>🏫 {product.seller.university}</p>
+              <p>🏫 {product.seller.university || 'Belirtilmemiş'}</p>
               {product.seller.phone && (
                 <p>📞 {product.seller.phone}</p>
               )}

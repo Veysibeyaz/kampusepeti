@@ -1,10 +1,13 @@
+// frontend/src/components/Navbar.js
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import useMessageNotification from '../hooks/useMessageNotification';
 import './Navbar.css';
 
 const Navbar = () => {
   const { isAuthenticated, user, logout } = useAuth();
+  const { unreadCount } = useMessageNotification();
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -27,7 +30,19 @@ const Navbar = () => {
       <div className="nav-container">
         {/* Logo */}
         <Link to="/" className="nav-logo">
-          📚 KampüSepeti
+          <img 
+            src="/Kampüsepeti_logo.png" 
+            alt="KampüSepeti" 
+            className="logo-image"
+            onError={(e) => {
+              // Fallback olarak emoji logo
+              e.target.style.display = 'none';
+              e.target.nextSibling.style.display = 'inline';
+            }}
+          />
+          <span className="logo-fallback" style={{display: 'none'}}>
+            📚 KampüSepeti
+          </span>
         </Link>
 
         {/* Search Bar */}
@@ -47,6 +62,16 @@ const Navbar = () => {
           {isAuthenticated ? (
             <div className="user-menu">
               <span className="user-name">Merhaba, {user?.name}</span>
+              
+              {/* Mesajlar - Yeni Eklendi */}
+              <Link to="/messages" className="nav-btn messages-btn">
+                <span className="messages-icon">💬</span>
+                <span className="messages-text">Mesajlar</span>
+                {unreadCount > 0 && (
+                  <span className="message-badge">{unreadCount}</span>
+                )}
+              </Link>
+              
               <Link to="/add-product" className="nav-btn">İlan Ver</Link>
               <Link to="/my-products" className="nav-btn">İlanlarım</Link>
               <button className="nav-btn logout-btn" onClick={handleLogout}>
