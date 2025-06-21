@@ -1,4 +1,4 @@
-// backend/server.js
+// backend/server.js - Final Version
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
@@ -13,29 +13,71 @@ const app = express();
 connectDB();
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: ['http://localhost:3000', 'http://127.0.0.1:3000'],
+  credentials: true
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Uploads klasörünü oluştur (yoksa)
+// Upload klasörlerini oluştur
 const uploadsDir = path.join(__dirname, 'uploads');
+const profilesDir = path.join(uploadsDir, 'profiles');
 const productsDir = path.join(uploadsDir, 'products');
 
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir);
-}
+[uploadsDir, profilesDir, productsDir].forEach(dir => {
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+    console.log('✅ Klasör oluşturuldu:', dir);
+  }
+});
 
-if (!fs.existsSync(productsDir)) {
-  fs.mkdirSync(productsDir, { recursive: true });
-}
+// ÖNEMLİ: Static files middleware - Routes'tan ÖNCE
+console.log('📁 Static files path:', uploadsDir);
+app.use('/uploads', express.static(uploadsDir));
 
-// Static files - uploads klasörünü serve et
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// Manuel image serving route - Geçici güvenlik
+app.get('/uploads/profiles/:filename', (req, res) => {
+  const filename = req.params.filename;
+  const filePath = path.join(profilesDir, filename);
+  
+  console.log('🖼️ Image requested:', filename);
+  console.log('📁 File exists:', fs.existsSync(filePath));
+  
+  if (fs.existsSync(filePath)) {
+    res.sendFile(filePath);
+  } else {
+    res.status(404).json({ 
+      message: 'Profil fotoğrafı bulunamadı',
+      filename: filename
+    });
+  }
+});
 
-// Routes
+// Debug routes
+app.get('/test-upload', (req, res) => {
+  try {
+    const profileFiles = fs.existsSync(profilesDir) ? fs.readdirSync(profilesDir) : [];
+    res.json({
+      message: 'Upload test',
+      uploadsDir,
+      profilesDir,
+      profileFiles,
+      sampleUrls: profileFiles.slice(0, 3).map(file => 
+        `http://localhost:5000/uploads/profiles/${file}`
+      )
+    });
+  } catch (error) {
+    res.json({ error: error.message });
+  }
+});
+
+// API Routes
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/products', require('./routes/products'));
-app.use('/api/messages', require('./routes/messages')); // Yeni eklendi
+app.use('/api/messages', require('./routes/messages'));
+app.use('/api/users', require('./routes/userRoutes'));
+app.use('/api/ratings', require('./routes/ratingRoutes'));
 
 // Ana route
 app.get('/', (req, res) => {
@@ -45,13 +87,20 @@ app.get('/', (req, res) => {
     endpoints: {
       auth: '/api/auth',
       products: '/api/products',
-      messages: '/api/messages'
+      messages: '/api/messages',
+      users: '/api/users',
+      ratings: '/api/ratings'
+    },
+    uploads: {
+      profiles: '/uploads/profiles',
+      test: '/test-upload'
     }
   });
 });
 
 // 404 handler
 app.use('*', (req, res) => {
+  console.log('❌ 404 - Route bulunamadı:', req.originalUrl);
   res.status(404).json({
     success: false,
     message: 'Route bulunamadı'
@@ -74,5 +123,6 @@ app.listen(PORT, () => {
   console.log(`🚀 Server ${PORT} portunda çalışıyor`);
   console.log(`📱 API: http://localhost:${PORT}`);
   console.log(`📁 Uploads: http://localhost:${PORT}/uploads`);
-  console.log(`💬 Messages API: http://localhost:${PORT}/api/messages`);
+  console.log(`📸 Profile Photos: http://localhost:${PORT}/uploads/profiles`);
+  console.log(`🧪 Test Upload: http://localhost:${PORT}/test-upload`);
 });

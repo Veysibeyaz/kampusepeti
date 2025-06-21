@@ -1,4 +1,4 @@
-// frontend/src/components/Navbar.js
+// frontend/src/components/Navbar.js - Final Version
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -10,6 +10,7 @@ const Navbar = () => {
   const { unreadCount } = useMessageNotification();
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
+  const [showUserDropdown, setShowUserDropdown] = useState(false);
 
   const handleLogout = () => {
     logout();
@@ -25,6 +26,28 @@ const Navbar = () => {
     }
   };
 
+  // Dropdown dışına tıklandığında kapat
+  const handleClickOutside = (e) => {
+    if (!e.target.closest('.user-profile-menu')) {
+      setShowUserDropdown(false);
+    }
+  };
+
+  React.useEffect(() => {
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, []);
+
+  // Profil resmi URL'i oluştur
+  const getProfileImageUrl = (profilePhoto) => {
+    if (!profilePhoto || profilePhoto === 'default-avatar.png') {
+      return '/default-avatar.png';
+    }
+    return `http://localhost:5000/uploads/profiles/${profilePhoto}`;
+  };
+
+  const profileImageUrl = getProfileImageUrl(user?.profilePhoto);
+
   return (
     <nav className="navbar">
       <div className="nav-container">
@@ -35,7 +58,6 @@ const Navbar = () => {
             alt="KampüSepeti" 
             className="logo-image"
             onError={(e) => {
-              // Fallback olarak emoji logo
               e.target.style.display = 'none';
               e.target.nextSibling.style.display = 'inline';
             }}
@@ -61,9 +83,7 @@ const Navbar = () => {
         <div className="nav-menu">
           {isAuthenticated ? (
             <div className="user-menu">
-              <span className="user-name">Merhaba, {user?.name}</span>
-              
-              {/* Mesajlar - Yeni Eklendi */}
+              {/* Mesajlar */}
               <Link to="/messages" className="nav-btn messages-btn">
                 <span className="messages-icon">💬</span>
                 <span className="messages-text">Mesajlar</span>
@@ -73,10 +93,85 @@ const Navbar = () => {
               </Link>
               
               <Link to="/add-product" className="nav-btn">İlan Ver</Link>
-              <Link to="/my-products" className="nav-btn">İlanlarım</Link>
-              <button className="nav-btn logout-btn" onClick={handleLogout}>
-                Çıkış
-              </button>
+              
+              {/* Profil Dropdown Menüsü */}
+              <div className="user-profile-menu">
+                <button 
+                  className="profile-trigger"
+                  onClick={() => setShowUserDropdown(!showUserDropdown)}
+                >
+                  <img 
+                    src={profileImageUrl}
+                    alt={user?.name || 'Profil'}
+                    className="profile-avatar"
+                    onLoad={() => console.log('✅ Navbar profil resmi yüklendi')}
+                    onError={(e) => {
+                      console.error('❌ Navbar profil resmi yüklenemedi:', profileImageUrl);
+                      e.target.src = '/default-avatar.png';
+                    }}
+                  />
+                  <span className="profile-name">{user?.name}</span>
+                  <span className={`dropdown-arrow ${showUserDropdown ? 'open' : ''}`}>▼</span>
+                </button>
+
+                {showUserDropdown && (
+                  <div className="user-dropdown">
+                    <div className="dropdown-header">
+                      <img 
+                        src={profileImageUrl}
+                        alt={user?.name}
+                        className="dropdown-avatar"
+                      />
+                      <div className="dropdown-user-info">
+                        <span className="dropdown-name">{user?.name}</span>
+                        <span className="dropdown-email">{user?.email}</span>
+                      </div>
+                    </div>
+                    
+                    <div className="dropdown-divider"></div>
+                    
+                    <Link 
+                      to={`/users/${user?.id}`} 
+                      className="dropdown-item"
+                      onClick={() => setShowUserDropdown(false)}
+                    >
+                      <span className="dropdown-icon">👤</span>
+                      Profilimi Gör
+                    </Link>
+                    
+                    <Link 
+                      to="/profile/edit" 
+                      className="dropdown-item"
+                      onClick={() => setShowUserDropdown(false)}
+                    >
+                      <span className="dropdown-icon">⚙️</span>
+                      Profili Düzenle
+                    </Link>
+                    
+                    <Link 
+                      to="/my-products" 
+                      className="dropdown-item"
+                      onClick={() => setShowUserDropdown(false)}
+                    >
+                      <span className="dropdown-icon">📋</span>
+                      İlanlarım
+                    </Link>
+                    
+                    <div className="dropdown-divider"></div>
+                    
+                    <button 
+                      onClick={() => {
+                        setShowUserDropdown(false);
+                        handleLogout();
+                      }} 
+                      className="dropdown-item logout-item"
+                    >
+                      <span className="dropdown-icon">🚪</span>
+                      Çıkış Yap
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           ) : (
             <div className="auth-menu">

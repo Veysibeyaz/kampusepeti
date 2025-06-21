@@ -1,90 +1,184 @@
+// backend/models/User.js - Düzeltilmiş versiyon
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
 const userSchema = new mongoose.Schema({
   name: {
     type: String,
-    required: [true, 'İsim gereklidir'],
+    required: true,
     trim: true,
-    maxLength: [50, 'İsim 50 karakterden uzun olamaz']
+    maxlength: 50
   },
   email: {
     type: String,
-    required: [true, 'E-posta gereklidir'],
+    required: true,
     unique: true,
     lowercase: true,
-    match: [
-      /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/,
-      'Geçerli bir e-posta adresi giriniz'
-    ]
+    trim: true
   },
   password: {
     type: String,
-    required: [true, 'Şifre gereklidir'],
-    minLength: [6, 'Şifre en az 6 karakter olmalıdır'],
-    select: false // Default olarak şifre getQuery'lerde gelmez
-  },
-  university: {
-    type: String,
-    required: [true, 'Üniversite gereklidir'],
-    trim: true
-  },
-  department: {
-    type: String,
-    required: [true, 'Bölüm gereklidir'],
-    trim: true
+    required: true,
+    minlength: 6
   },
   phone: {
     type: String,
+    trim: true,
+    maxlength: 15
+  },
+  // DÜZELTME: ObjectId yerine String kullan
+  university: {
+    type: String,  // ObjectId yerine String
+    required: true,
     trim: true
   },
-  avatar: {
+  department: {
+    type: String,  // ObjectId yerine String
+    required: true,
+    trim: true
+  },
+  profilePhoto: {
     type: String,
     default: 'default-avatar.png'
   },
-  rating: {
-    average: {
-      type: Number,
-      default: 0
-    },
-    count: {
-      type: Number,
-      default: 0
-    }
+  bio: {
+    type: String,
+    maxlength: 300,
+    trim: true
   },
-  isActive: {
-    type: Boolean,
-    default: true
+  // Değerlendirme sistemi için alanlar
+  averageRating: {
+    type: Number,
+    default: 0,
+    min: 0,
+    max: 5
+  },
+  totalRatings: {
+    type: Number,
+    default: 0,
+    min: 0
+  },
+  // Güvenilirlik skoru
+  trustScore: {
+    type: Number,
+    default: 50,
+    min: 0,
+    max: 100
+  },
+  // Kullanıcı durumu
+  status: {
+    type: String,
+    enum: ['active', 'suspended', 'banned'],
+    default: 'active'
   },
   role: {
     type: String,
     enum: ['user', 'admin'],
     default: 'user'
+  },
+  // İstatistikler
+  totalSales: {
+    type: Number,
+    default: 0
+  },
+  totalPurchases: {
+    type: Number,
+    default: 0
+  },
+  // Hesap doğrulama
+  isEmailVerified: {
+    type: Boolean,
+    default: false
+  },
+  isActive: {
+    type: Boolean,
+    default: true  // Varsayılan olarak aktif
+  },
+  emailVerificationToken: String,
+  // Şifre sıfırlama
+  resetPasswordToken: String,
+  resetPasswordExpires: Date,
+  // Son aktivite
+  lastActive: {
+    type: Date,
+    default: Date.now
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now
+  },
+  updatedAt: {
+    type: Date,
+    default: Date.now
   }
-}, {
-  timestamps: true // createdAt, updatedAt otomatik ekler
 });
 
-// Şifre hashleme middleware
+// Şifre hashleme middleware'i
 userSchema.pre('save', async function(next) {
-  // Şifre değişmemişse devam et
+  // Şifre değişmediyse atla
   if (!this.isModified('password')) return next();
   
-  // Şifreyi hashle
-  this.password = await bcrypt.hash(this.password, 12);
-  next();
+  try {
+    // Şifreyi hashle
+    const salt = await bcrypt.genSalt(10);
+    this.password = await bcrypt.hash(this.password, salt);
+    next();
+  } catch (error) {
+    next(error);
+  }
 });
 
-// Şifre karşılaştırma metodu
-userSchema.methods.comparePassword = async function(enteredPassword) {
-  return await bcrypt.compare(enteredPassword, this.password);
+// Güven skoru hesaplama metodu
+userSchema.methods.calculateTrustScore = function() {
+  let score = 50; // Başlangıç skoru
+  
+  // Ortalama puana göre
+  if (this.averageRating >= 4.5) score += 20;
+  else if (this.averageRating >= 4.0) score += 15;
+  else if (this.averageRating >= 3.5) score += 10;
+  else if (this.averageRating >= 3.0) score += 5;
+  else if (this.averageRating < 2.5) score -= 15;
+  
+  // Toplam değerlendirme sayısına göre
+  if (this.totalRatings >= 50) score += 15;
+  else if (this.totalRatings >= 20) score += 10;
+  else if (this.totalRatings >= 10) score += 5;
+  
+  // Satış sayısına göre
+  if (this.totalSales >= 20) score += 10;
+  else if (this.totalSales >= 10) score += 5;
+  
+  // E-posta doğrulaması
+  if (this.isEmailVerified) score += 5;
+  
+  // Hesap yaşına göre (6 aydan fazla)
+  const accountAge = (Date.now() - this.createdAt) / (1000 * 60 * 60 * 24 * 30);
+  if (accountAge >= 6) score += 5;
+  
+  // Skor limitlerini uygula
+  this.trustScore = Math.max(0, Math.min(100, score));
+  return this.trustScore;
 };
 
-// JSON'a çevirirken şifreyi gizle
+// Şifre karşılaştırma metodu
+userSchema.methods.comparePassword = async function(candidatePassword) {
+  return await bcrypt.compare(candidatePassword, this.password);
+};
+
+// JSON çıktısında şifreyi gizle
 userSchema.methods.toJSON = function() {
   const userObject = this.toObject();
   delete userObject.password;
+  delete userObject.emailVerificationToken;
+  delete userObject.resetPasswordToken;
+  delete userObject.resetPasswordExpires;
   return userObject;
 };
+
+// İndeksler
+userSchema.index({ email: 1 });
+userSchema.index({ university: 1, department: 1 });
+userSchema.index({ averageRating: -1 });
+userSchema.index({ trustScore: -1 });
 
 module.exports = mongoose.model('User', userSchema);

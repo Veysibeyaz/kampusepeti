@@ -1,4 +1,4 @@
-/* frontend/src/components/Navbar.css */
+/* frontend/src/components/Navbar.css - Temizlenmiş ve Düzeltilmiş */
 .navbar {
   background-color: #fff;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
@@ -22,6 +22,8 @@
   font-weight: bold;
   color: #2563eb;
   text-decoration: none;
+  display: flex;
+  align-items: center;
 }
 
 .nav-search {
@@ -66,11 +68,6 @@
   gap: 1rem;
 }
 
-.user-name {
-  font-weight: 500;
-  color: #374151;
-}
-
 .nav-btn {
   padding: 0.5rem 1rem;
   border: none;
@@ -93,16 +90,11 @@
   color: white;
 }
 
-.logout-btn {
-  background-color: #dc2626;
-  color: white;
-}
-
 .nav-btn:hover {
   transform: translateY(-1px);
 }
 
-/* Mesajlar butonu - YENİ */
+/* Mesajlar butonu */
 .messages-btn {
   position: relative;
   display: flex !important;
@@ -143,75 +135,166 @@
   animation: pulse 2s infinite;
 }
 
-@keyframes pulse {
-  0% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.1);
-  }
-  100% {
-    transform: scale(1);
-  }
+/* ===== PROFIL DROPDOWN MENÜSÜ - DÜZELTİLMİŞ ===== */
+.user-profile-menu {
+  position: relative;
 }
 
-@media (max-width: 768px) {
-  .nav-container {
-    flex-direction: column;
-    gap: 1rem;
-  }
-  
-  .nav-search {
-    order: 2;
-    width: 100%;
-  }
-  
-  .user-menu, .auth-menu {
-    flex-wrap: wrap;
-    justify-content: center;
-  }
-
-  /* Mobile'da mesaj butonunu sadeleştir */
-  .messages-text {
-    display: none;
-  }
-  
-  .messages-btn {
-    padding: 0.5rem;
-    min-width: auto;
-  }
-  
-  .message-badge {
-    top: -5px;
-    right: -5px;
-    width: 16px;
-    height: 16px;
-    font-size: 0.7rem;
-  }
+.profile-trigger {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 8px;
+  transition: background-color 0.2s ease;
 }
 
-@media (max-width: 480px) {
-  .user-menu {
-    gap: 0.5rem;
-  }
-  
-  .nav-btn {
-    padding: 0.4rem 0.8rem;
-    font-size: 0.9rem;
-  }
-  
-  .user-name {
-    display: none; /* Çok küçük ekranlarda gizle */
-  }
+.profile-trigger:hover {
+  background-color: #f3f4f6;
+}
+
+/* NAVBAR AVATAR - DÜZELTİLMİŞ */
+.profile-trigger .profile-avatar {
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  min-height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: center;
+  border: 2px solid #e5e7eb;
+  flex-shrink: 0;
+  display: block;
+  background: #f3f4f6;
+}
+
+.profile-name {
+  font-weight: 500;
+  color: #374151;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.9rem;
+}
+
+.dropdown-arrow {
+  font-size: 0.8rem;
+  color: #6b7280;
+  transition: transform 0.2s ease;
+  margin-left: 0.25rem;
+}
+
+.dropdown-arrow.open {
+  transform: rotate(180deg);
+}
+
+.user-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+  min-width: 250px;
+  z-index: 1001;
+  margin-top: 0.5rem;
+  overflow: hidden;
+}
+
+.dropdown-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+/* DROPDOWN AVATAR - DÜZELTİLMİŞ */
+.dropdown-header .dropdown-avatar {
+  width: 50px;
+  height: 50px;
+  min-width: 50px;
+  min-height: 50px;
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: center;
+  border: 2px solid #e5e7eb;
+  flex-shrink: 0;
+  background: #f3f4f6;
+}
+
+.dropdown-user-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.dropdown-name {
+  font-weight: 600;
+  color: #111827;
+  font-size: 0.95rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dropdown-email {
+  font-size: 0.8rem;
+  color: #6b7280;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dropdown-divider {
+  height: 1px;
+  background: #e5e7eb;
+  margin: 0;
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  color: #374151;
+  text-decoration: none;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  font-size: 0.9rem;
+}
+
+.dropdown-item:hover {
+  background-color: #f3f4f6;
+}
+
+.dropdown-icon {
+  font-size: 1rem;
+  width: 18px;
+  text-align: center;
+}
+
+.logout-item {
+  color: #dc2626;
+  font-weight: 500;
+}
+
+.logout-item:hover {
+  background-color: #fef2f2;
 }
 
 /* Logo stilleri */
-.nav-logo {
-  display: flex;
-  align-items: center;
-  text-decoration: none !important;
-}
-
 .logo-image {
   height: 45px;
   width: auto;
@@ -228,15 +311,117 @@
   color: #2563eb;
 }
 
-/* Responsive logo */
+/* Animasyonlar */
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Responsive Design */
 @media (max-width: 768px) {
+  .nav-container {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .nav-search {
+    order: 2;
+    width: 100%;
+  }
+  
+  .user-menu, .auth-menu {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .messages-text {
+    display: none;
+  }
+  
+  .messages-btn {
+    padding: 0.5rem;
+    min-width: auto;
+  }
+  
+  .message-badge {
+    top: -5px;
+    right: -5px;
+    width: 16px;
+    height: 16px;
+    font-size: 0.7rem;
+  }
+
+  .profile-name {
+    display: none;
+  }
+
+  .user-dropdown {
+    right: 0;
+    left: auto;
+    min-width: 220px;
+  }
+
   .logo-image {
     height: 35px;
+  }
+
+  /* Mobile avatar boyutları */
+  .profile-trigger .profile-avatar {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    min-height: 36px;
+  }
+  
+  .dropdown-header .dropdown-avatar {
+    width: 45px;
+    height: 45px;
+    min-width: 45px;
+    min-height: 45px;
   }
 }
 
 @media (max-width: 480px) {
+  .user-menu {
+    gap: 0.5rem;
+  }
+  
+  .nav-btn {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.9rem;
+  }
+  
+  .user-dropdown {
+    min-width: 200px;
+  }
+
+  .dropdown-header {
+    padding: 0.75rem;
+  }
+
   .logo-image {
     height: 30px;
+  }
+
+  /* Small mobile avatar boyutları */
+  .profile-trigger .profile-avatar {
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    min-height: 32px;
+  }
+  
+  .dropdown-header .dropdown-avatar {
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    min-height: 40px;
   }
 }

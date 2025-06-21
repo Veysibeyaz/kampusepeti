@@ -4,6 +4,24 @@ import axios from 'axios';
 
 const AuthContext = createContext();
 
+// YENİ: User data transformer - _id'yi id'ye çevir
+const transformUserData = (userData) => {
+  if (!userData) return null;
+  
+  // Eğer _id varsa id'ye çevir
+  if (userData._id && !userData.id) {
+    userData.id = userData._id;
+  }
+  
+  console.log('🔄 User data transformed:', {
+    originalId: userData._id,
+    newId: userData.id,
+    name: userData.name
+  });
+  
+  return userData;
+};
+
 // Auth reducer
 const authReducer = (state, action) => {
   console.log('🔄 AuthReducer Action:', action.type, action.payload);
@@ -20,7 +38,7 @@ const authReducer = (state, action) => {
         ...state,
         loading: false,
         isAuthenticated: true,
-        user: action.payload.user,
+        user: transformUserData(action.payload.user), // YENİ: Transform user data
         token: action.payload.token,
         error: null,
         initialized: true
@@ -59,17 +77,22 @@ const authReducer = (state, action) => {
       return {
         ...state,
         isAuthenticated: true,
-        user: action.payload.user,
+        user: transformUserData(action.payload.user), // YENİ: Transform user data
         token: action.payload.token,
         initialized: true,
         loading: false
+      };
+    case 'UPDATE_USER': // YENİ: User data güncelleme
+      return {
+        ...state,
+        user: transformUserData(action.payload)
       };
     default:
       return state;
   }
 };
 
-// Initial state with localStorage check - HEMEN KONTROL ET
+// Initial state with localStorage check
 const getInitialState = () => {
   console.log('🏁 Initial state oluşturuluyor...');
   
@@ -82,7 +105,8 @@ const getInitialState = () => {
   if (token && userData) {
     try {
       const user = JSON.parse(userData);
-      console.log('✅ Initial user data parse edildi:', user);
+      const transformedUser = transformUserData(user); // YENİ: Transform user data
+      console.log('✅ Initial user data parse edildi:', transformedUser);
       
       // Axios header'ını hemen ayarla
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
@@ -90,7 +114,7 @@ const getInitialState = () => {
       
       return {
         isAuthenticated: true,
-        user: user,
+        user: transformedUser,
         token: token,
         loading: false,
         error: null,
@@ -119,6 +143,7 @@ export const AuthProvider = ({ children }) => {
   console.log('🏗️ Auth State:', {
     isAuthenticated: state.isAuthenticated,
     hasUser: !!state.user,
+    userId: state.user?.id, // YENİ: User ID'yi logla
     hasToken: !!state.token,
     initialized: state.initialized
   });
@@ -148,13 +173,16 @@ export const AuthProvider = ({ children }) => {
       const { token, user } = response.data;
       console.log('✅ Login başarılı, user:', user);
 
+      // YENİ: Transformed user'ı kaydet
+      const transformedUser = transformUserData(user);
+      
       localStorage.setItem('token', token);
-      localStorage.setItem('user', JSON.stringify(user));
+      localStorage.setItem('user', JSON.stringify(transformedUser));
       console.log('💾 Token ve user localStorage\'a kaydedildi');
 
       dispatch({
         type: 'LOGIN_SUCCESS',
-        payload: { token, user }
+        payload: { token, user: transformedUser }
       });
 
       return { success: true };
@@ -181,13 +209,16 @@ export const AuthProvider = ({ children }) => {
       const { token, user } = response.data;
       console.log('✅ Register başarılı, user:', user);
 
+      // YENİ: Transformed user'ı kaydet
+      const transformedUser = transformUserData(user);
+
       localStorage.setItem('token', token);
-      localStorage.setItem('user', JSON.stringify(user));
+      localStorage.setItem('user', JSON.stringify(transformedUser));
       console.log('💾 Token ve user localStorage\'a kaydedildi');
 
       dispatch({
         type: 'LOGIN_SUCCESS',
-        payload: { token, user }
+        payload: { token, user: transformedUser }
       });
 
       return { success: true };
@@ -213,6 +244,19 @@ export const AuthProvider = ({ children }) => {
     console.log('✅ Logout tamamlandı');
   };
 
+  // YENİ: Update user function
+  const updateUser = (userData) => {
+    console.log('🔄 User update:', userData);
+    const transformedUser = transformUserData(userData);
+    
+    localStorage.setItem('user', JSON.stringify(transformedUser));
+    
+    dispatch({
+      type: 'UPDATE_USER',
+      payload: transformedUser
+    });
+  };
+
   // Clear error
   const clearError = () => {
     dispatch({ type: 'CLEAR_ERROR' });
@@ -223,6 +267,7 @@ export const AuthProvider = ({ children }) => {
     login,
     register,
     logout,
+    updateUser, // YENİ
     clearError
   };
 
