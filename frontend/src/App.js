@@ -1,25 +1,29 @@
-// frontend/src/App.js
+// frontend/src/App.js - Fixed Imports
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './context/AuthContext'; // Mevcut klasör
+import { AuthProvider, useAuth } from './context/AuthContext';
 
 // Components
-import Navbar from './components/Navbar'; // Mevcut klasör yapısı
-import Footer from './components/Footer'; // Mevcut klasör yapısı
+import Navbar from './components/Navbar';
+import Footer from './components/Footer';
 
-// Pages - Mevcut
+// Pages - Existing (use correct file names)
 import HomePage from './pages/HomePage';
-import LoginPage from './pages/LoginPage'; // Tam dosya adı
-import RegisterPage from './pages/RegisterPage'; // Tam dosya adı
+import Login from './pages/Login'; // Changed from LoginPage to Login
+import Register from './pages/Register'; // Changed from RegisterPage to Register
 import AddProduct from './pages/AddProduct';
 import ProductList from './pages/ProductList';
 import ProductDetail from './pages/ProductDetail';
 import MyProducts from './pages/MyProducts';
 import UserProfile from './pages/UserProfile';
 import Messages from './pages/Messages';
+import ProfileEdit from './pages/ProfileEdit';
 
-// YENİ PAGES - Adım 8
-import ProfileEdit from './pages/ProfileEdit'; // Profil düzenleme sayfası
+// NEW PAGES - Admin Panel (Adım 9)
+import AdminDashboard from './pages/AdminDashboard';
+import UserManagement from './pages/UserManagement';
+import ProductModeration from './pages/ProductModeration';
+import Reports from './pages/Reports';
 
 // Styles
 import './App.css';
@@ -35,6 +39,25 @@ const ProtectedRoute = ({ children }) => {
   return user ? children : <Navigate to="/login" />;
 };
 
+// Admin Route Component
+const AdminRoute = ({ children }) => {
+  const { user, loading } = useAuth();
+  
+  if (loading) {
+    return <div className="loading">Yükleniyor...</div>;
+  }
+  
+  if (!user) {
+    return <Navigate to="/login" />;
+  }
+  
+  if (user.role !== 'admin') {
+    return <Navigate to="/" />;
+  }
+  
+  return children;
+};
+
 function App() {
   return (
     <AuthProvider>
@@ -45,16 +68,13 @@ function App() {
             <Routes>
               {/* Public Routes */}
               <Route path="/" element={<HomePage />} />
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/register" element={<RegisterPage />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
               <Route path="/products" element={<ProductList />} />
               <Route path="/products/:id" element={<ProductDetail />} />
-              
-              {/* YENİ - Kullanıcı Profil Routes */}
               <Route path="/user/:id" element={<UserProfile />} />
-              <Route path="/users/:id" element={<UserProfile />} /> {/* Alternative route */}
               
-              {/* Protected Routes - Mevcut */}
+              {/* Protected Routes */}
               <Route path="/add-product" element={
                 <ProtectedRoute>
                   <AddProduct />
@@ -73,18 +93,41 @@ function App() {
                 </ProtectedRoute>
               } />
               
-              {/* YENİ - Profil Yönetimi Routes */}
               <Route path="/profile/edit" element={
                 <ProtectedRoute>
                   <ProfileEdit />
                 </ProtectedRoute>
               } />
               
-              <Route path="/profile" element={
-                <ProtectedRoute>
-                  {/* Kullanıcıyı kendi profiline yönlendir */}
-                  <Navigate to="/profile/edit" />
-                </ProtectedRoute>
+              {/* ADMIN ROUTES - NEW */}
+              <Route path="/admin" element={
+                <AdminRoute>
+                  <AdminDashboard />
+                </AdminRoute>
+              } />
+              
+              <Route path="/admin/dashboard" element={
+                <AdminRoute>
+                  <AdminDashboard />
+                </AdminRoute>
+              } />
+              
+              <Route path="/admin/users" element={
+                <AdminRoute>
+                  <UserManagement />
+                </AdminRoute>
+              } />
+              
+              <Route path="/admin/products" element={
+                <AdminRoute>
+                  <ProductModeration />
+                </AdminRoute>
+              } />
+              
+              <Route path="/admin/reports" element={
+                <AdminRoute>
+                  <Reports />
+                </AdminRoute>
               } />
               
               {/* 404 Route */}

@@ -1,4 +1,4 @@
-// frontend/src/context/AuthContext.js
+// frontend/src/context/AuthContext.js - Güncellenmiş Versiyon
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
 import axios from 'axios';
 
@@ -16,13 +16,14 @@ const transformUserData = (userData) => {
   console.log('🔄 User data transformed:', {
     originalId: userData._id,
     newId: userData.id,
-    name: userData.name
+    name: userData.name,
+    role: userData.role // ADMIN: Role bilgisini logla
   });
   
   return userData;
 };
 
-// Auth reducer
+// Auth reducer (GÜNCELLEME: Admin özellikleri eklendi)
 const authReducer = (state, action) => {
   console.log('🔄 AuthReducer Action:', action.type, action.payload);
   
@@ -34,14 +35,19 @@ const authReducer = (state, action) => {
         error: null
       };
     case 'LOGIN_SUCCESS':
+      const transformedUser = transformUserData(action.payload.user);
       return {
         ...state,
         loading: false,
         isAuthenticated: true,
-        user: transformUserData(action.payload.user), // YENİ: Transform user data
+        user: transformedUser,
         token: action.payload.token,
         error: null,
-        initialized: true
+        initialized: true,
+        // ADMIN: Role-based properties
+        isAdmin: transformedUser?.role === 'admin',
+        isModerator: transformedUser?.role === 'moderator',
+        isAdminOrModerator: transformedUser?.role === 'admin' || transformedUser?.role === 'moderator'
       };
     case 'LOGIN_FAIL':
       return {
@@ -51,7 +57,11 @@ const authReducer = (state, action) => {
         user: null,
         token: null,
         error: action.payload,
-        initialized: true
+        initialized: true,
+        // ADMIN: Reset admin properties
+        isAdmin: false,
+        isModerator: false,
+        isAdminOrModerator: false
       };
     case 'LOGOUT':
       return {
@@ -61,7 +71,11 @@ const authReducer = (state, action) => {
         token: null,
         loading: false,
         error: null,
-        initialized: true
+        initialized: true,
+        // ADMIN: Reset admin properties
+        isAdmin: false,
+        isModerator: false,
+        isAdminOrModerator: false
       };
     case 'CLEAR_ERROR':
       return {
@@ -74,25 +88,35 @@ const authReducer = (state, action) => {
         initialized: true
       };
     case 'RESTORE_SESSION':
+      const restoredUser = transformUserData(action.payload.user);
       return {
         ...state,
         isAuthenticated: true,
-        user: transformUserData(action.payload.user), // YENİ: Transform user data
+        user: restoredUser,
         token: action.payload.token,
         initialized: true,
-        loading: false
+        loading: false,
+        // ADMIN: Restore admin properties
+        isAdmin: restoredUser?.role === 'admin',
+        isModerator: restoredUser?.role === 'moderator',
+        isAdminOrModerator: restoredUser?.role === 'admin' || restoredUser?.role === 'moderator'
       };
-    case 'UPDATE_USER': // YENİ: User data güncelleme
+    case 'UPDATE_USER':
+      const updatedUser = transformUserData(action.payload);
       return {
         ...state,
-        user: transformUserData(action.payload)
+        user: updatedUser,
+        // ADMIN: Update admin properties
+        isAdmin: updatedUser?.role === 'admin',
+        isModerator: updatedUser?.role === 'moderator',
+        isAdminOrModerator: updatedUser?.role === 'admin' || updatedUser?.role === 'moderator'
       };
     default:
       return state;
   }
 };
 
-// Initial state with localStorage check
+// Initial state with localStorage check (GÜNCELLEME: Admin properties eklendi)
 const getInitialState = () => {
   console.log('🏁 Initial state oluşturuluyor...');
   
@@ -105,8 +129,9 @@ const getInitialState = () => {
   if (token && userData) {
     try {
       const user = JSON.parse(userData);
-      const transformedUser = transformUserData(user); // YENİ: Transform user data
+      const transformedUser = transformUserData(user);
       console.log('✅ Initial user data parse edildi:', transformedUser);
+      console.log('🛡️ User role:', transformedUser?.role); // ADMIN: Role logla
       
       // Axios header'ını hemen ayarla
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
@@ -118,7 +143,11 @@ const getInitialState = () => {
         token: token,
         loading: false,
         error: null,
-        initialized: true
+        initialized: true,
+        // ADMIN: Initial admin properties
+        isAdmin: transformedUser?.role === 'admin',
+        isModerator: transformedUser?.role === 'moderator',
+        isAdminOrModerator: transformedUser?.role === 'admin' || transformedUser?.role === 'moderator'
       };
     } catch (error) {
       console.error('❌ Initial user data parse hatası:', error);
@@ -133,7 +162,11 @@ const getInitialState = () => {
     token: null,
     loading: false,
     error: null,
-    initialized: true
+    initialized: true,
+    // ADMIN: Default admin properties
+    isAdmin: false,
+    isModerator: false,
+    isAdminOrModerator: false
   };
 };
 
@@ -143,7 +176,9 @@ export const AuthProvider = ({ children }) => {
   console.log('🏗️ Auth State:', {
     isAuthenticated: state.isAuthenticated,
     hasUser: !!state.user,
-    userId: state.user?.id, // YENİ: User ID'yi logla
+    userId: state.user?.id,
+    userRole: state.user?.role, // ADMIN: Role logla
+    isAdmin: state.isAdmin, // ADMIN: Admin status logla
     hasToken: !!state.token,
     initialized: state.initialized
   });
@@ -159,21 +194,43 @@ export const AuthProvider = ({ children }) => {
     }
   }, [state.token]);
 
-  // Login function
-  const login = async (email, password) => {
+  // GÜNCELLEME: Login function - Direkt token ve user kabul etmek için overload
+  const login = async (emailOrUser, password) => {
     try {
       console.log('🔐 Login başlıyor...');
+      
+      // ADMIN: Eğer emailOrUser bir obje ise (user data), direkt login yap
+      if (typeof emailOrUser === 'object' && password && typeof password === 'string') {
+        const user = emailOrUser;
+        const token = password; // Bu durumda password aslında token
+        
+        console.log('✅ Direct login (Admin panel için):', user);
+        
+        const transformedUser = transformUserData(user);
+        
+        localStorage.setItem('token', token);
+        localStorage.setItem('user', JSON.stringify(transformedUser));
+        console.log('💾 Token ve user localStorage\'a kaydedildi (Direct)');
+
+        dispatch({
+          type: 'LOGIN_SUCCESS',
+          payload: { token, user: transformedUser }
+        });
+
+        return { success: true };
+      }
+      
+      // Normal email/password login
       dispatch({ type: 'LOGIN_START' });
 
       const response = await axios.post('http://localhost:5000/api/auth/login', {
-        email,
+        email: emailOrUser,
         password
       });
 
       const { token, user } = response.data;
       console.log('✅ Login başarılı, user:', user);
 
-      // YENİ: Transformed user'ı kaydet
       const transformedUser = transformUserData(user);
       
       localStorage.setItem('token', token);
@@ -198,7 +255,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Register function
+  // Register function (aynı kalıyor)
   const register = async (userData) => {
     try {
       console.log('📝 Register başlıyor...');
@@ -209,7 +266,6 @@ export const AuthProvider = ({ children }) => {
       const { token, user } = response.data;
       console.log('✅ Register başarılı, user:', user);
 
-      // YENİ: Transformed user'ı kaydet
       const transformedUser = transformUserData(user);
 
       localStorage.setItem('token', token);
@@ -234,7 +290,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Logout function
+  // Logout function (aynı kalıyor)
   const logout = () => {
     console.log('🚪 Logout yapılıyor...');
     localStorage.removeItem('token');
@@ -244,7 +300,7 @@ export const AuthProvider = ({ children }) => {
     console.log('✅ Logout tamamlandı');
   };
 
-  // YENİ: Update user function
+  // Update user function (aynı kalıyor)
   const updateUser = (userData) => {
     console.log('🔄 User update:', userData);
     const transformedUser = transformUserData(userData);
@@ -257,7 +313,7 @@ export const AuthProvider = ({ children }) => {
     });
   };
 
-  // Clear error
+  // Clear error (aynı kalıyor)
   const clearError = () => {
     dispatch({ type: 'CLEAR_ERROR' });
   };
@@ -267,7 +323,7 @@ export const AuthProvider = ({ children }) => {
     login,
     register,
     logout,
-    updateUser, // YENİ
+    updateUser,
     clearError
   };
 
@@ -278,7 +334,7 @@ export const AuthProvider = ({ children }) => {
   );
 };
 
-// Custom hook
+// Custom hook (aynı kalıyor)
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
@@ -286,3 +342,6 @@ export const useAuth = () => {
   }
   return context;
 };
+
+// ADMIN: Named export eklendi (compatibility için)
+export { AuthContext };

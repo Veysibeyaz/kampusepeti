@@ -1,4 +1,4 @@
-// frontend/src/pages/ProfileEdit.js - Final Version
+// frontend/src/pages/ProfileEdit.js - Complete Version with Photo Upload
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -98,18 +98,22 @@ const ProfileEdit = () => {
   const handlePhotoChange = (e) => {
     const file = e.target.files[0];
     if (file) {
+      // Dosya boyutu kontrolü (5MB)
       if (file.size > 5 * 1024 * 1024) {
         setError('Dosya boyutu 5MB\'dan küçük olmalıdır');
         return;
       }
 
+      // Dosya tipi kontrolü
       if (!file.type.startsWith('image/')) {
         setError('Sadece resim dosyaları yüklenebilir');
         return;
       }
 
       setProfilePhoto(file);
+      setError('');
       
+      // Önizleme oluştur
       const reader = new FileReader();
       reader.onload = (e) => {
         setPhotoPreview(e.target.result);
@@ -164,7 +168,7 @@ const ProfileEdit = () => {
       
       // 2 saniye sonra profil sayfasına yönlendir
       setTimeout(() => {
-        navigate(`/users/${user.id}`);
+        navigate(`/user/${user.id}`);
       }, 2000);
       
     } catch (error) {
@@ -181,33 +185,36 @@ const ProfileEdit = () => {
     <div className="profile-edit">
       <div className="container">
         <div className="edit-header">
-          <h1>Profili Düzenle</h1>
+          <h1>📝 Profili Düzenle</h1>
           <button 
-            onClick={() => navigate(`/users/${user?.id || ''}`)}
+            onClick={() => navigate(`/user/${user?.id || ''}`)}
             className="btn btn-secondary"
           >
-            Geri Dön
+            ← Geri Dön
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="edit-form">
-          {error && <div className="error-message">{error}</div>}
-          {success && <div className="success-message">{success}</div>}
+          {error && <div className="error-message">❌ {error}</div>}
+          {success && <div className="success-message">✅ {success}</div>}
 
-          {/* Profil Fotoğrafı */}
+          {/* PROFİL FOTOĞRAFI BÖLÜMÜ */}
           <div className="photo-section">
-            <label>Profil Fotoğrafı</label>
+            <label className="section-title">📸 Profil Fotoğrafı</label>
             <div className="photo-upload">
               <div className="photo-preview">
                 <img 
                   src={photoPreview || '/default-avatar.png'} 
                   alt="Profil fotoğrafı önizleme"
-                  onLoad={() => console.log('✅ Preview image loaded')}
+                  className="preview-image"
                   onError={(e) => {
                     console.error('❌ Preview image failed to load');
                     e.target.src = '/default-avatar.png';
                   }}
                 />
+                <div className="photo-overlay">
+                  <span>📷</span>
+                </div>
               </div>
               <div className="photo-controls">
                 <input
@@ -217,17 +224,22 @@ const ProfileEdit = () => {
                   onChange={handlePhotoChange}
                   style={{ display: 'none' }}
                 />
-                <label htmlFor="profilePhoto" className="btn btn-secondary">
-                  Fotoğraf Seç
+                <label htmlFor="profilePhoto" className="btn btn-photo">
+                  📎 Fotoğraf Seç
                 </label>
                 <small>JPG, PNG veya GIF. Maksimum 5MB.</small>
+                {profilePhoto && (
+                  <small className="selected-file">
+                    ✅ {profilePhoto.name} seçildi
+                  </small>
+                )}
               </div>
             </div>
           </div>
 
-          {/* Kişisel Bilgiler */}
+          {/* KİŞİSEL BİLGİLER */}
           <div className="form-section">
-            <h3>Kişisel Bilgiler</h3>
+            <h3>👤 Kişisel Bilgiler</h3>
             
             <div className="form-group">
               <label htmlFor="name">Ad Soyad *</label>
@@ -239,11 +251,12 @@ const ProfileEdit = () => {
                 onChange={handleInputChange}
                 required
                 maxLength={50}
+                placeholder="Adınız ve soyadınız"
               />
             </div>
 
             <div className="form-group">
-              <label htmlFor="phone">Telefon</label>
+              <label htmlFor="phone">📞 Telefon</label>
               <input
                 type="tel"
                 id="phone"
@@ -256,23 +269,23 @@ const ProfileEdit = () => {
             </div>
 
             <div className="form-group">
-              <label htmlFor="bio">Hakkımda</label>
+              <label htmlFor="bio">💬 Hakkımda</label>
               <textarea
                 id="bio"
                 name="bio"
                 value={formData.bio}
                 onChange={handleInputChange}
-                placeholder="Kendinizi kısaca tanıtın..."
-                maxLength={300}
+                placeholder="Kendiniz hakkında kısa bir açıklama yazın..."
+                maxLength={500}
                 rows={4}
               />
-              <small>{formData.bio.length}/300 karakter</small>
+              <small>{formData.bio.length}/500 karakter</small>
             </div>
           </div>
 
-          {/* Eğitim Bilgileri */}
+          {/* EĞİTİM BİLGİLERİ */}
           <div className="form-section">
-            <h3>Eğitim Bilgileri</h3>
+            <h3>🎓 Eğitim Bilgileri</h3>
             
             <div className="form-group">
               <label htmlFor="university">Üniversite *</label>
@@ -283,9 +296,9 @@ const ProfileEdit = () => {
                 onChange={handleInputChange}
                 required
               >
-                <option value="">Üniversite seçin</option>
+                <option value="">Üniversite seçin...</option>
                 {universities.map(uni => (
-                  <option key={uni._id} value={uni._id}>
+                  <option key={uni._id} value={uni.name}>
                     {uni.name}
                   </option>
                 ))}
@@ -302,24 +315,27 @@ const ProfileEdit = () => {
                 required
                 disabled={!formData.university}
               >
-                <option value="">Bölüm seçin</option>
+                <option value="">Bölüm seçin...</option>
                 {departments.map(dept => (
-                  <option key={dept._id} value={dept._id}>
+                  <option key={dept._id} value={dept.name}>
                     {dept.name}
                   </option>
                 ))}
               </select>
+              {!formData.university && (
+                <small>Önce üniversite seçin</small>
+              )}
             </div>
           </div>
 
-          {/* Kaydet Butonu */}
+          {/* KAYDET BUTONU */}
           <div className="form-actions">
             <button
               type="submit"
               className="btn btn-primary"
               disabled={saving}
             >
-              {saving ? 'Kaydediliyor...' : 'Değişiklikleri Kaydet'}
+              {saving ? '💾 Kaydediliyor...' : '💾 Değişiklikleri Kaydet'}
             </button>
           </div>
         </form>

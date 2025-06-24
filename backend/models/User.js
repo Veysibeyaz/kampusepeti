@@ -1,52 +1,82 @@
-// backend/models/User.js - Düzeltilmiş versiyon
+// backend/models/User.js - Final Sürüm
 const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs');
+const bcryptjs = require('bcryptjs');
 
-const userSchema = new mongoose.Schema({
+const userSchema = mongoose.Schema({
   name: {
     type: String,
-    required: true,
+    required: [true, 'İsim gereklidir'],
     trim: true,
     maxlength: 50
   },
   email: {
     type: String,
-    required: true,
+    required: [true, 'E-posta gereklidir'],
     unique: true,
     lowercase: true,
     trim: true
   },
   password: {
     type: String,
-    required: true,
+    required: [true, 'Şifre gereklidir'],
     minlength: 6
+  },
+  university: {
+    type: String,
+    required: [true, 'Üniversite gereklidir'],
+    trim: true
+  },
+  department: {
+    type: String,
+    required: [true, 'Bölüm gereklidir'],
+    trim: true
   },
   phone: {
     type: String,
     trim: true,
     maxlength: 15
   },
-  // DÜZELTME: ObjectId yerine String kullan
-  university: {
-    type: String,  // ObjectId yerine String
-    required: true,
-    trim: true
+  
+  // Profil resmi için alan (mevcut koddan)
+  avatar: {
+    type: String,
+    default: null
   },
-  department: {
-    type: String,  // ObjectId yerine String
-    required: true,
-    trim: true
-  },
+  
+  // Alternatif profil resmi alanı (yeni koddan)
   profilePhoto: {
     type: String,
     default: 'default-avatar.png'
   },
+  
   bio: {
     type: String,
     maxlength: 300,
     trim: true
   },
-  // Değerlendirme sistemi için alanlar
+  
+  // Profil görünürlük ayarları (mevcut koddan)
+  profileVisibility: {
+    type: String,
+    enum: ['public', 'university', 'private'],
+    default: 'public'
+  },
+  
+  // Rating sistemi - iki farklı yaklaşım birleştirildi
+  rating: {
+    average: {
+      type: Number,
+      default: 0,
+      min: 0,
+      max: 5
+    },
+    count: {
+      type: Number,
+      default: 0
+    }
+  },
+  
+  // Alternatif rating alanları (yeni koddan)
   averageRating: {
     type: Number,
     default: 0,
@@ -58,25 +88,35 @@ const userSchema = new mongoose.Schema({
     default: 0,
     min: 0
   },
-  // Güvenilirlik skoru
+  
+  // Güvenilirlik skoru (yeni koddan)
   trustScore: {
     type: Number,
     default: 50,
     min: 0,
     max: 100
   },
-  // Kullanıcı durumu
+  
+  // Kullanıcı rolleri ve durumu
+  role: {
+    type: String,
+    enum: ['user', 'moderator', 'admin'],
+    default: 'user'
+  },
+  
   status: {
     type: String,
     enum: ['active', 'suspended', 'banned'],
     default: 'active'
   },
-  role: {
-    type: String,
-    enum: ['user', 'admin'],
-    default: 'user'
+  
+  // Hesap durumu
+  isActive: {
+    type: Boolean,
+    default: true
   },
-  // İstatistikler
+  
+  // İstatistikler (yeni koddan)
   totalSales: {
     type: Number,
     default: 0
@@ -85,64 +125,83 @@ const userSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
+  
   // Hesap doğrulama
   isEmailVerified: {
     type: Boolean,
     default: false
   },
-  isActive: {
-    type: Boolean,
-    default: true  // Varsayılan olarak aktif
-  },
   emailVerificationToken: String,
+  
   // Şifre sıfırlama
   resetPasswordToken: String,
   resetPasswordExpires: Date,
-  // Son aktivite
+  
+  // Son aktivite zamanları
+  lastSeen: {
+    type: Date,
+    default: Date.now
+  },
   lastActive: {
     type: Date,
     default: Date.now
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now
-  },
-  updatedAt: {
-    type: Date,
-    default: Date.now
   }
+}, {
+  timestamps: true  // createdAt ve updatedAt otomatik eklenir
 });
 
-// Şifre hashleme middleware'i
+// Şifre hashleme middleware
 userSchema.pre('save', async function(next) {
-  // Şifre değişmediyse atla
   if (!this.isModified('password')) return next();
   
   try {
-    // Şifreyi hashle
-    const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password, salt);
+    const salt = await bcryptjs.genSalt(10);
+    this.password = await bcryptjs.hash(this.password, salt);
     next();
   } catch (error) {
     next(error);
   }
 });
 
-// Güven skoru hesaplama metodu
+// Şifre doğrulama methodu (mevcut koddan)
+userSchema.methods.matchPassword = async function(enteredPassword) {
+  return await bcryptjs.compare(enteredPassword, this.password);
+};
+
+// Alternatif şifre doğrulama (yeni koddan)
+userSchema.methods.comparePassword = async function(candidatePassword) {
+  return await bcryptjs.compare(candidatePassword, this.password);
+};
+
+// Avatar URL'sini getirme methodu (mevcut koddan)
+userSchema.methods.getAvatarUrl = function() {
+  if (this.avatar) {
+    if (this.avatar.startsWith('http')) {
+      return this.avatar;
+    }
+    return `${process.env.BACKEND_URL}/uploads/avatars/${this.avatar}`;
+  }
+  
+  return `${process.env.BACKEND_URL}/uploads/avatars/default-avatar.png`;
+};
+
+// Güven skoru hesaplama metodu (yeni koddan)
 userSchema.methods.calculateTrustScore = function() {
   let score = 50; // Başlangıç skoru
   
   // Ortalama puana göre
-  if (this.averageRating >= 4.5) score += 20;
-  else if (this.averageRating >= 4.0) score += 15;
-  else if (this.averageRating >= 3.5) score += 10;
-  else if (this.averageRating >= 3.0) score += 5;
-  else if (this.averageRating < 2.5) score -= 15;
+  const avgRating = this.averageRating || this.rating?.average || 0;
+  if (avgRating >= 4.5) score += 20;
+  else if (avgRating >= 4.0) score += 15;
+  else if (avgRating >= 3.5) score += 10;
+  else if (avgRating >= 3.0) score += 5;
+  else if (avgRating < 2.5) score -= 15;
   
   // Toplam değerlendirme sayısına göre
-  if (this.totalRatings >= 50) score += 15;
-  else if (this.totalRatings >= 20) score += 10;
-  else if (this.totalRatings >= 10) score += 5;
+  const totalRatings = this.totalRatings || this.rating?.count || 0;
+  if (totalRatings >= 50) score += 15;
+  else if (totalRatings >= 20) score += 10;
+  else if (totalRatings >= 10) score += 5;
   
   // Satış sayısına göre
   if (this.totalSales >= 20) score += 10;
@@ -160,25 +219,90 @@ userSchema.methods.calculateTrustScore = function() {
   return this.trustScore;
 };
 
-// Şifre karşılaştırma metodu
-userSchema.methods.comparePassword = async function(candidatePassword) {
-  return await bcrypt.compare(candidatePassword, this.password);
+// Public profil bilgilerini getirme (mevcut koddan)
+userSchema.methods.getPublicProfile = function() {
+  return {
+    _id: this._id,
+    name: this.name,
+    email: this.email,
+    university: this.university,
+    department: this.department,
+    avatar: this.getAvatarUrl(),
+    rating: this.rating,
+    averageRating: this.averageRating,
+    totalRatings: this.totalRatings,
+    trustScore: this.trustScore,
+    totalSales: this.totalSales,
+    createdAt: this.createdAt,
+    lastSeen: this.lastSeen,
+    isActive: this.isActive,
+    isEmailVerified: this.isEmailVerified
+  };
 };
 
-// JSON çıktısında şifreyi gizle
+// ToJSON override - şifre ve hassas bilgileri gizle (her iki koddan)
 userSchema.methods.toJSON = function() {
   const userObject = this.toObject();
   delete userObject.password;
   delete userObject.emailVerificationToken;
   delete userObject.resetPasswordToken;
   delete userObject.resetPasswordExpires;
+  
+  // Avatar URL'ini ekle
+  userObject.avatar = this.getAvatarUrl();
   return userObject;
 };
 
-// İndeksler
+// İlk admin kullanıcı oluşturma helper'ı (mevcut koddan)
+userSchema.statics.createDefaultAdmin = async function() {
+  const adminExists = await this.findOne({ role: 'admin' });
+  
+  if (!adminExists) {
+    const defaultAdmin = new this({
+      name: 'Admin',
+      email: 'admin@kampusepeti.com',
+      password: 'admin123',
+      university: 'Sistem',
+      department: 'Yönetim',
+      role: 'admin',
+      isActive: true,
+      isEmailVerified: true
+    });
+    
+    await defaultAdmin.save();
+    console.log('Varsayılan admin kullanıcısı oluşturuldu');
+    console.log('Email: admin@kampusepeti.com');
+    console.log('Şifre: admin123');
+  }
+};
+
+// Rating güncelleme helper metodu
+userSchema.methods.updateRating = function(newRating) {
+  const currentTotal = (this.rating?.average || 0) * (this.rating?.count || 0);
+  const newCount = (this.rating?.count || 0) + 1;
+  const newAverage = (currentTotal + newRating) / newCount;
+  
+  this.rating = {
+    average: Math.round(newAverage * 10) / 10, // 1 ondalık basamak
+    count: newCount
+  };
+  
+  // Alternatif alanları da güncelle
+  this.averageRating = this.rating.average;
+  this.totalRatings = this.rating.count;
+  
+  // Güven skorunu yeniden hesapla
+  this.calculateTrustScore();
+  
+  return this.rating;
+};
+
+// İndeksler (her iki koddan)
 userSchema.index({ email: 1 });
 userSchema.index({ university: 1, department: 1 });
 userSchema.index({ averageRating: -1 });
 userSchema.index({ trustScore: -1 });
+userSchema.index({ role: 1 });
+userSchema.index({ isActive: 1 });
 
 module.exports = mongoose.model('User', userSchema);

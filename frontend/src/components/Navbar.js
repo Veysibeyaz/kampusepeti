@@ -1,4 +1,4 @@
-// frontend/src/components/Navbar.js - Final Version
+// frontend/src/components/Navbar.js - Updated with Admin Links
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -83,60 +83,52 @@ const Navbar = () => {
         <div className="nav-menu">
           {isAuthenticated ? (
             <div className="user-menu">
+              {/* İlan Ver Butonu */}
+              <Link to="/add-product" className="nav-btn add-product-btn">
+                ➕ İlan Ver
+              </Link>
+
               {/* Mesajlar */}
               <Link to="/messages" className="nav-btn messages-btn">
-                <span className="messages-icon">💬</span>
-                <span className="messages-text">Mesajlar</span>
+                💬 Mesajlar
                 {unreadCount > 0 && (
-                  <span className="message-badge">{unreadCount}</span>
+                  <span className="notification-badge">{unreadCount}</span>
                 )}
               </Link>
-              
-              <Link to="/add-product" className="nav-btn">İlan Ver</Link>
-              
-              {/* Profil Dropdown Menüsü */}
+
+              {/* ADMIN PANEL LINK - NEW */}
+              {user?.role === 'admin' && (
+                <Link to="/admin/dashboard" className="nav-btn admin-btn">
+                  👑 Admin Panel
+                </Link>
+              )}
+
+              {/* User Profile Dropdown */}
               <div className="user-profile-menu">
                 <button 
-                  className="profile-trigger"
+                  className="user-profile-btn"
                   onClick={() => setShowUserDropdown(!showUserDropdown)}
                 >
                   <img 
                     src={profileImageUrl}
-                    alt={user?.name || 'Profil'}
-                    className="profile-avatar"
-                    onLoad={() => console.log('✅ Navbar profil resmi yüklendi')}
+                    alt={user?.name}
+                    className="user-avatar"
                     onError={(e) => {
-                      console.error('❌ Navbar profil resmi yüklenemedi:', profileImageUrl);
                       e.target.src = '/default-avatar.png';
                     }}
                   />
-                  <span className="profile-name">{user?.name}</span>
-                  <span className={`dropdown-arrow ${showUserDropdown ? 'open' : ''}`}>▼</span>
+                  <span className="user-name">{user?.name}</span>
+                  <span className="dropdown-arrow">▼</span>
                 </button>
 
                 {showUserDropdown && (
                   <div className="user-dropdown">
-                    <div className="dropdown-header">
-                      <img 
-                        src={profileImageUrl}
-                        alt={user?.name}
-                        className="dropdown-avatar"
-                      />
-                      <div className="dropdown-user-info">
-                        <span className="dropdown-name">{user?.name}</span>
-                        <span className="dropdown-email">{user?.email}</span>
-                      </div>
-                    </div>
-                    
-                    <div className="dropdown-divider"></div>
-                    
                     <Link 
-                      to={`/users/${user?.id}`} 
+                      to={`/user/${user?.id}`} 
                       className="dropdown-item"
                       onClick={() => setShowUserDropdown(false)}
                     >
-                      <span className="dropdown-icon">👤</span>
-                      Profilimi Gör
+                      👤 Profilim
                     </Link>
                     
                     <Link 
@@ -144,8 +136,7 @@ const Navbar = () => {
                       className="dropdown-item"
                       onClick={() => setShowUserDropdown(false)}
                     >
-                      <span className="dropdown-icon">⚙️</span>
-                      Profili Düzenle
+                      ⚙️ Profil Düzenle
                     </Link>
                     
                     <Link 
@@ -153,21 +144,59 @@ const Navbar = () => {
                       className="dropdown-item"
                       onClick={() => setShowUserDropdown(false)}
                     >
-                      <span className="dropdown-icon">📋</span>
-                      İlanlarım
+                      📚 İlanlarım
                     </Link>
-                    
+
+                    {/* ADMIN DROPDOWN ITEMS - NEW */}
+                    {user?.role === 'admin' && (
+                      <>
+                        <div className="dropdown-divider"></div>
+                        <div className="dropdown-header">Admin İşlemleri</div>
+                        
+                        <Link 
+                          to="/admin/dashboard" 
+                          className="dropdown-item admin-item"
+                          onClick={() => setShowUserDropdown(false)}
+                        >
+                          📊 Dashboard
+                        </Link>
+                        
+                        <Link 
+                          to="/admin/users" 
+                          className="dropdown-item admin-item"
+                          onClick={() => setShowUserDropdown(false)}
+                        >
+                          👥 Kullanıcı Yönetimi
+                        </Link>
+                        
+                        <Link 
+                          to="/admin/products" 
+                          className="dropdown-item admin-item"
+                          onClick={() => setShowUserDropdown(false)}
+                        >
+                          📚 İlan Moderasyonu
+                        </Link>
+                        
+                        <Link 
+                          to="/admin/reports" 
+                          className="dropdown-item admin-item"
+                          onClick={() => setShowUserDropdown(false)}
+                        >
+                          ⚠️ Şikayet Yönetimi
+                        </Link>
+                      </>
+                    )}
+
                     <div className="dropdown-divider"></div>
                     
                     <button 
+                      className="dropdown-item logout-item"
                       onClick={() => {
                         setShowUserDropdown(false);
                         handleLogout();
-                      }} 
-                      className="dropdown-item logout-item"
+                      }}
                     >
-                      <span className="dropdown-icon">🚪</span>
-                      Çıkış Yap
+                      🚪 Çıkış Yap
                     </button>
                   </div>
                 )}
@@ -176,10 +205,10 @@ const Navbar = () => {
           ) : (
             <div className="auth-menu">
               <Link to="/login" className="nav-btn login-btn">
-                Giriş Yap
+                🔑 Giriş Yap
               </Link>
               <Link to="/register" className="nav-btn register-btn">
-                Kayıt Ol
+                📝 Kayıt Ol
               </Link>
             </div>
           )}

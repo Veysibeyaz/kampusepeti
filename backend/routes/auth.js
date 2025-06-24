@@ -1,6 +1,7 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const Product = require('../models/Product');
 const { protect } = require('../middleware/auth');
 
 const router = express.Router();
@@ -132,7 +133,7 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// @desc    Kullanıcı profili getir
+// @desc    Kullanıcı profili getir (kendi profili)
 // @route   GET /api/auth/profile
 // @access  Private
 router.get('/profile', protect, async (req, res) => {
@@ -150,16 +151,44 @@ router.get('/profile', protect, async (req, res) => {
   }
 });
 
+// @desc    Kendi profil bilgilerini getir (alternatif endpoint)
+// @route   GET /api/auth/me  
+// @access  Private
+router.get('/me', protect, async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id).select('-password');
+    
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'Kullanıcı bulunamadı'
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      user
+    });
+  } catch (error) {
+    console.error('Profil getirme hatası:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Sunucu hatası',
+      error: error.message
+    });
+  }
+});
+
 // @desc    Profil güncelleme
 // @route   PUT /api/auth/profile
 // @access  Private
 router.put('/profile', protect, async (req, res) => {
   try {
-    const { name, university, department, phone } = req.body;
+    const { name, university, department, phone, bio } = req.body;
 
     const user = await User.findByIdAndUpdate(
       req.user._id,
-      { name, university, department, phone },
+      { name, university, department, phone, bio },
       { new: true, runValidators: true }
     );
 
@@ -170,6 +199,84 @@ router.put('/profile', protect, async (req, res) => {
     });
 
   } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Sunucu hatası',
+      error: error.message
+    });
+  }
+});
+
+// @desc    Başka kullanıcının profil bilgilerini getir
+// @route   GET /api/users/:id
+// @access  Public (herkes görebilir)
+router.get('/users/:id', async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id).select('-password');
+    
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'Kullanıcı bulunamadı'
+      });
+    }
+
+    // Kullanıcı istatistiklerini ekle
+    let productCount = 0;
+    try {
+      productCount = await Product.countDocuments({ 
+        seller: user._id, 
+        status: 'active' 
+      });
+    } catch (productError) {
+      console.log('Product count alınamadı:', productError.message);
+    }
+
+    const userWithStats = {
+      ...user.toObject(),
+      activeProductsCount: productCount,
+      totalRatings: 0, // Rating sistemi henüz hazır değil
+      averageRating: 0,
+      trustScore: 75 // Default değer
+    };
+
+    res.status(200).json({
+      success: true,
+      user: userWithStats
+    });
+  } catch (error) {
+    console.error('Kullanıcı profili getirme hatası:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Sunucu hatası',
+      error: error.message
+    });
+  }
+});
+
+// @desc    Kullanıcının ürünlerini getir
+// @route   GET /api/users/:id/products
+// @access  Public
+router.get('/users/:id/products', async (req, res) => {
+  try {
+    let products = [];
+    try {
+      products = await Product.find({ 
+        seller: req.params.id, 
+        status: 'active' 
+      })
+      .populate('category', 'name')
+      .sort({ createdAt: -1 });
+    } catch (productError) {
+      console.log('User products alınamadı:', productError.message);
+    }
+
+    res.status(200).json({
+      success: true,
+      products
+    });
+  } catch (error) {
+    console.error('Kullanıcı ürünleri getirme hatası:', error);
     res.status(500).json({
       success: false,
       message: 'Sunucu hatası',

@@ -1,9 +1,10 @@
+// frontend/src/pages/Login.js
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import './AuthPages.css';
+import './AuthPages.css'; // Eğer CSS dosyası yoksa yoruma alın
 
-const LoginPage = () => {
+const Login = () => { // LoginPage → Login olarak değiştir
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -82,6 +83,10 @@ const LoginPage = () => {
               Hesabınız yok mu? 
               <Link to="/register"> Kayıt olun</Link>
             </p>
+            <p>
+              Admin misiniz? 
+              <Link to="/admin/login" style={{ color: '#dc3545' }}> Admin Girişi</Link>
+            </p>
           </div>
         </div>
       </div>
@@ -89,4 +94,4 @@ const LoginPage = () => {
   );
 };
 
-export default LoginPage;
+export default Login; // LoginPage → Login olarak değiştir

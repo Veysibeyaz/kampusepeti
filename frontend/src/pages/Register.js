@@ -1,9 +1,10 @@
+// frontend/src/pages/Register.js
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import './AuthPages.css';
+import './AuthPages.css'; // Eğer CSS dosyası yoksa yoruma alın
 
-const RegisterPage = () => {
+const Register = () => { // RegisterPage → Register olarak değiştir
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -81,6 +82,7 @@ const RegisterPage = () => {
                 onChange={handleChange}
                 placeholder="En az 6 karakter"
                 required
+                minLength="6"
               />
             </div>
             
@@ -140,4 +142,4 @@ const RegisterPage = () => {
   );
 };
 
-export default RegisterPage;
+export default Register; // RegisterPage → Register olarak değiştir

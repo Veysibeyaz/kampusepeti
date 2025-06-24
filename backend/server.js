@@ -1,4 +1,4 @@
-// backend/server.js - Final Version
+// backend/server.js - Updated with Admin Routes
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
@@ -36,7 +36,7 @@ const productsDir = path.join(uploadsDir, 'products');
 console.log('📁 Static files path:', uploadsDir);
 app.use('/uploads', express.static(uploadsDir));
 
-// Manuel image serving route - Geçici güvenlik
+// Manuel image serving route
 app.get('/uploads/profiles/:filename', (req, res) => {
   const filename = req.params.filename;
   const filePath = path.join(profilesDir, filename);
@@ -72,27 +72,42 @@ app.get('/test-upload', (req, res) => {
   }
 });
 
-// API Routes
+// API Routes - Existing
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/products', require('./routes/products'));
 app.use('/api/messages', require('./routes/messages'));
 app.use('/api/users', require('./routes/userRoutes'));
 app.use('/api/ratings', require('./routes/ratingRoutes'));
 
+// NEW ADMIN ROUTES - Adım 9
+app.use('/api/admin', require('./routes/admin'));
+app.use('/api/reports', require('./routes/reports'));
+
 // Ana route
 app.get('/', (req, res) => {
   res.json({ 
     message: 'KampüSepeti API çalışıyor!',
-    version: '1.0.0',
+    version: '2.0.0 - Admin Panel Eklendi',
     endpoints: {
       auth: '/api/auth',
       products: '/api/products',
       messages: '/api/messages',
       users: '/api/users',
-      ratings: '/api/ratings'
+      ratings: '/api/ratings',
+      // NEW ENDPOINTS
+      admin: '/api/admin',
+      reports: '/api/reports'
+    },
+    adminEndpoints: {
+      dashboard: '/api/admin/dashboard',
+      users: '/api/admin/users',
+      products: '/api/admin/products',
+      reports: '/api/admin/reports',
+      systemReports: '/api/admin/reports/system'
     },
     uploads: {
       profiles: '/uploads/profiles',
+      products: '/uploads/products',
       test: '/test-upload'
     }
   });
@@ -125,4 +140,6 @@ app.listen(PORT, () => {
   console.log(`📁 Uploads: http://localhost:${PORT}/uploads`);
   console.log(`📸 Profile Photos: http://localhost:${PORT}/uploads/profiles`);
   console.log(`🧪 Test Upload: http://localhost:${PORT}/test-upload`);
+  console.log(`👑 Admin Panel: http://localhost:${PORT}/api/admin`);
+  console.log(`⚠️ Reports: http://localhost:${PORT}/api/reports`);
 });
